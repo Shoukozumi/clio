@@ -136,7 +136,7 @@ public:
         std::optional<ripple::uint256> const& cursor,
         std::uint32_t ledgerSequence,
         std::uint32_t limit,
-        std::uint32_t limitHint = 0) const;
+        bool outOfOrder = false) const;
 
     // Fetches the successor to key/index
     std::optional<LedgerObject>

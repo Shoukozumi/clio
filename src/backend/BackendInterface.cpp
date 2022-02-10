@@ -217,7 +217,7 @@ BackendInterface::fetchLedgerPage(
     std::optional<ripple::uint256> const& cursor,
     std::uint32_t ledgerSequence,
     std::uint32_t limit,
-    std::uint32_t limitHint) const
+    bool outOfOrder) const
 {
     LedgerPage page;
 
@@ -226,7 +226,8 @@ BackendInterface::fetchLedgerPage(
     {
         ripple::uint256 const& curCursor =
             keys.size() ? keys.back() : cursor ? *cursor : firstKey;
-        auto succ = fetchSuccessorKey(curCursor, ledgerSequence);
+        uint32_t seq = outOfOrder ? range->maxSequence : ledgerSequence;
+        auto succ = fetchSuccessorKey(curCursor, seq);
         if (!succ)
             break;
         keys.push_back(std::move(*succ));
