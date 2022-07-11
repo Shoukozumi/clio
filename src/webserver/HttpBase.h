@@ -242,9 +242,9 @@ public:
                 },
                 dosGuard_.isWhiteListed(*ip)))
         {
-            // Connection getting rate limited due to full connection queue
+            // Non-whitelist connection rejected due to full connection queue
             http::response<http::string_body> res{
-                http::status::service_unavailable, req_.version()};
+                http::status::ok, req_.version()};
             res.set(
                 http::field::server,
                 "clio-server-" + Build::getClioVersionString());
@@ -428,8 +428,7 @@ handle_request(
         responseStr = boost::json::serialize(response);
         if (!dosGuard.add(ip, responseStr.size()))
         {
-            warnings.emplace_back("load");
-            response["warnings"] = warnings;
+            response["warning"] = "load";
             // reserialize when we need to include this warning
             responseStr = boost::json::serialize(response);
         }
