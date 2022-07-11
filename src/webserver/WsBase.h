@@ -358,7 +358,9 @@ public:
         std::string responseStr = boost::json::serialize(response);
         if (!dosGuard_.add(*ip, responseStr.size()))
         {
-            warnings.emplace_back("Too many requests");
+            ripple::RPC::ErrorInfo const& info(
+                ripple::RPC::get_error_info(RPC::Error::rpcSLOW_DOWN));
+            warnings.emplace_back(info.message);
             response["warnings"] = warnings;
             // reserialize if we need to include this warning
             responseStr = boost::json::serialize(response);
@@ -383,19 +385,16 @@ public:
 
         BOOST_LOG_TRIVIAL(debug)
             << __func__ << " received request from ip = " << *ip;
-        auto sendError = [&](auto&& msg) {
-            boost::json::object response;
-            response["error"] = std::move(msg);
-            std::string responseStr = boost::json::serialize(response);
-
+        auto sendError = [&](auto error) {
+            auto e = RPC::make_error(error);
+            std::string responseStr = boost::json::serialize(e);
             BOOST_LOG_TRIVIAL(trace) << __func__ << " : " << responseStr;
-
             dosGuard_.add(*ip, responseStr.size());
             send(std::move(responseStr));
         };
         if (!dosGuard_.isOk(*ip))
         {
-            sendError("Too many requests. Slow down");
+            sendError(RPC::Error::rpcSLOW_DOWN);
         }
         else
         {
@@ -405,7 +404,7 @@ public:
                         shared_this->handle_request(std::move(m), yield);
                     },
                     dosGuard_.isWhiteListed(*ip)))
-                sendError("Server overloaded");
+                sendError(RPC::Error::rpcTOO_BUSY);
         }
 
         do_read();
